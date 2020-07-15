@@ -8,10 +8,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Resume Updater',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: Navigation(),
+      theme: ThemeData.dark(),
+      home: SafeArea(
+        child: Navigation()
+        ),
     );
   }
 }
