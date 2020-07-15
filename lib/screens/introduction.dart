@@ -10,7 +10,11 @@ class _IntroductionState extends State<Introduction>{
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
-    return null;
+    return Column(
+      children: <Widget>[
+        Text('Introduction')
+      ],
+    );
   }
   
 }

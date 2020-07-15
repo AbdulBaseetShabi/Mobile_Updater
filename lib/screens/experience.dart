@@ -9,7 +9,11 @@ class _ExperienceState extends State<Experience>{
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
-    return null;
+    return Column(
+      children: <Widget>[
+        Text('Experience')
+      ],
+    );
   }
 
 }

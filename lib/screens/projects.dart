@@ -9,6 +9,10 @@ class _ProjectsState extends State<Projects>{
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
-    return null;
+    return Column(
+      children: <Widget>[
+        Text('Projects')
+      ],
+    );
   }
 }
