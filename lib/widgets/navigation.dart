@@ -30,22 +30,19 @@ class _NavigationState extends State<Navigation> {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return Scaffold(
-      body: SingleChildScrollView(
-        child: _navPages[_currentNavigation],
-        scrollDirection: Axis.vertical,
-      ),
+      body: _navPages[_currentNavigation],
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         items: _navItems,
+        currentIndex: _currentNavigation,
         onTap: (index) {
           setState(() {
             _currentNavigation = index;
           });
         },
-        backgroundColor: Colors.blueGrey[400],
-        showSelectedLabels: false,
+        backgroundColor: Colors.black,
+        showSelectedLabels: true,
         showUnselectedLabels: false,
       ),
     );
