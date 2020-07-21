@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:resume_updater/global.dart';
@@ -41,6 +42,7 @@ class _IntroductionState extends State<Introduction> {
   List<Biography> list_biography = [];
   // bool _checkboxValue = false;
   TextEditingController _newBiography = new TextEditingController();
+  List<TextEditingController> _editBiography = [];
 
   @override
   Widget build(BuildContext context) {
@@ -109,12 +111,17 @@ class _IntroductionState extends State<Introduction> {
         future: biography,
         builder: (context, snapshot) {
           if (snapshot.hasData) {
-            biography.then((list) => {list_biography = list});
-            return ListView.builder(
-                itemCount: list_biography.length,
-                itemBuilder: (context, index) {
-                  return biographyTile(index);
-                });
+            list_biography = snapshot.data;
+            return CarouselSlider.builder(
+              itemCount: list_biography.length,
+              itemBuilder: (context, index) {
+                _editBiography.add(new TextEditingController(
+                    text: list_biography[index].data));
+                return biographyTile(index);
+              },
+              options:
+                  CarouselOptions(height: MediaQuery.of(context).size.height),
+            );
           } else if (snapshot.hasError) {
             return Center(child: Text("${snapshot.error}"));
           }
@@ -154,13 +161,24 @@ class _IntroductionState extends State<Introduction> {
     }
   }
 
+  deleteBiography(String id) async {
+    final response = await http.post(
+        Global.backend_url_local + '/removeData?db=' + Introduction.db,
+        body: {'_id': id});
+    if (response.statusCode == 500) {
+      throw new Exception(response.body);
+    } else if (response.statusCode == 200) {
+      return;
+    }
+  }
+
   void makeBiographyActive(id) async {
     final response = await http.post(
         Global.backend_url_local + '/biography/active',
         body: {'_id': id});
     if (response.statusCode == 500) {
       throw new Exception(response.body);
-    } 
+    }
   }
 
   void makeActiveBioInactive() {
@@ -172,28 +190,108 @@ class _IntroductionState extends State<Introduction> {
   }
 
   Widget biographyTile(int index) {
+    bool editMode = false;
     return Card(
-      margin: EdgeInsetsDirectional.only(top: 10, end: 10, start: 10),
-      child: ListTile(
-        title: Text(list_biography[index].data),
-        subtitle: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 5),
+        child: Column(
           mainAxisSize: MainAxisSize.max,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          // mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: <Widget>[
-            Text(list_biography[index].date.toLocal().toString()),
-            list_biography[index].isActive ? Text("active") : Text(""),
+            Padding(
+              padding: list_biography[index].isActive
+                  ? const EdgeInsets.all(5.0)
+                  : const EdgeInsets.all(0),
+              child: Text(
+                list_biography[index].isActive ? "ACTIVE" : "",
+                style: TextStyle(
+                    color: Colors.greenAccent,
+                    height: list_biography[index].isActive ? 1 : 0),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    Text("Date:"),
+                    Text(list_biography[index].date.toLocal().toString()),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 7,
+              child: TextFormField(
+                controller: _editBiography[index],
+                maxLines: 15,
+                autocorrect: true,
+                keyboardType: TextInputType.multiline,
+                enableSuggestions: true,
+                readOnly: !editMode,
+                enabled: !editMode,
+                decoration: InputDecoration(
+                    labelStyle: TextStyle(fontSize: 24),
+                    labelText: "Biography:",
+                    border: OutlineInputBorder()),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+              child: RaisedButton(
+                child: Text("Set as Actice"),
+                onPressed: list_biography[index].isActive
+                    ? null
+                    : () {
+                        makeBiographyActive(list_biography[index].id);
+                        setState(() {
+                          makeActiveBioInactive();
+                          list_biography[index].isActive = true;
+                        });
+                      },
+                color: Colors.greenAccent,
+                disabledColor: Colors.grey,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+              child: RaisedButton(
+                child: editMode ? Text("Done") : Text("Edit"),
+                onPressed: editMode
+                    ? () {
+                        setState(() {
+                          editMode = !editMode;
+                        });
+                      }
+                    : () {
+                        setState(() {
+                          editMode = !editMode;
+                        });
+                      },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+              child: RaisedButton(
+                child: editMode ? Text("Cancel") : Text("Delete"),
+                onPressed: editMode
+                    ? () {}
+                    : list_biography[index].isActive
+                        ? null
+                        : () {
+                            deleteBiography(list_biography[index].id);
+                            setState(() {
+                              list_biography.removeAt(index);
+                            });                            
+                            _editBiography.removeAt(index);
+                          },
+                color: Colors.redAccent,
+              ),
+            ),
           ],
-        ),
-        onTap: () {
-          // TODO: if scuccessgul change subtitles
-          makeBiographyActive(list_biography[index].id);
-          setState(() {
-            makeActiveBioInactive();
-            list_biography[index].isActive = true;
-          });
-        },
-      ),
-    );
+        ));
   }
 
   @override
