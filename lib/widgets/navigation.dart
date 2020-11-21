@@ -12,11 +12,13 @@ class Navigation extends StatefulWidget {
 
 class _NavigationState extends State<Navigation> {
   final List<BottomNavigationBarItem> _navItems = [
-    BottomNavigationBarItem(icon: Icon(Icons.home), title: Text("Home")),
-    BottomNavigationBarItem(icon: Icon(Icons.person), title: Text("Profile")),
-    BottomNavigationBarItem(icon: Icon(Icons.business_center), title: Text("Experience")),
-    BottomNavigationBarItem(icon: Icon(Icons.library_books), title: Text("Projects")),
-    BottomNavigationBarItem(icon: Icon(Icons.perm_contact_calendar), title: Text("Contact"))
+    BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+    BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
+    BottomNavigationBarItem(
+        icon: Icon(Icons.business_center), label: "Experience"),
+    BottomNavigationBarItem(icon: Icon(Icons.library_books), label: "Projects"),
+    BottomNavigationBarItem(
+        icon: Icon(Icons.perm_contact_calendar), label: "Contact")
   ];
 
   final List<Widget> _navPages = [
