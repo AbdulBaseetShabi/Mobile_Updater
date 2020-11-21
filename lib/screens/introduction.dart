@@ -4,21 +4,24 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:resume_updater/global.dart';
+import 'package:intl/intl.dart';
 
 class Biography {
   final String id;
   final DateTime date;
   String data;
   bool isActive;
+  bool edit;
 
-  Biography({this.id, this.date, this.data, this.isActive});
+  Biography({this.id, this.date, this.data, this.isActive, this.edit});
 
   static Biography fromJson(dynamic json) {
     return Biography(
         id: json["_id"],
         data: json["data"],
         date: DateTime.parse(json["date"]),
-        isActive: json["is_active"]);
+        isActive: json["is_active"],
+        edit: false);
   }
 
   static List<Biography> fromJsonList(dynamic json) {
@@ -42,7 +45,6 @@ class _IntroductionState extends State<Introduction> {
   List<Biography> list_biography = [];
   // bool _checkboxValue = false;
   TextEditingController _newBiography = new TextEditingController();
-  List<TextEditingController> _editBiography = [];
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +76,8 @@ class _IntroductionState extends State<Introduction> {
                                   "data": value,
                                   "date": date
                                 }));
+
+                                sortBiography();
                               })
                             });
                         _newBiography.clear();
@@ -112,15 +116,20 @@ class _IntroductionState extends State<Introduction> {
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             list_biography = snapshot.data;
+            sortBiography();
+
             return CarouselSlider.builder(
               itemCount: list_biography.length,
               itemBuilder: (context, index) {
-                _editBiography.add(new TextEditingController(
-                    text: list_biography[index].data));
                 return biographyTile(index);
               },
-              options:
-                  CarouselOptions(height: MediaQuery.of(context).size.height),
+              options: CarouselOptions(
+                  onPageChanged: (index, reason) {
+                    setState(() => list_biography[index].edit = false);
+                  },
+                  height: MediaQuery.of(context).size.height,
+                  enableInfiniteScroll: false,
+                  viewportFraction: 1.0),
             );
           } else if (snapshot.hasError) {
             return Center(child: Text("${snapshot.error}"));
@@ -129,6 +138,18 @@ class _IntroductionState extends State<Introduction> {
         },
       ),
     );
+  }
+
+  void sortBiography() {
+    list_biography.sort((a, b) {
+      if (a.isActive) {
+        return -1;
+      } else if (b.isActive) {
+        return 1;
+      } else {
+        return -1 * a.date.toString().compareTo(b.date.toString());
+      }
+    });
   }
 
   void initState() {
@@ -161,6 +182,20 @@ class _IntroductionState extends State<Introduction> {
     }
   }
 
+  updateBiography(String id, String data) async {
+    final response = await http.post(
+        Global.backend_url_local + '/updateData?db=' + Introduction.db,
+        body: {'_id': id, "data": data});
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else if (response.statusCode == 500) {
+      throw new Exception(response.body);
+    } else {
+      throw new Exception("HTTP call failed");
+    }
+  }
+
+//Todod: Widgets for errors
   deleteBiography(String id) async {
     final response = await http.post(
         Global.backend_url_local + '/removeData?db=' + Introduction.db,
@@ -190,7 +225,6 @@ class _IntroductionState extends State<Introduction> {
   }
 
   Widget biographyTile(int index) {
-    bool editMode = false;
     return Card(
         margin: EdgeInsets.symmetric(vertical: 10, horizontal: 5),
         child: Column(
@@ -217,7 +251,9 @@ class _IntroductionState extends State<Introduction> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
                     Text("Date:"),
-                    Text(list_biography[index].date.toLocal().toString()),
+                    Text(DateFormat('yyyy-MM-dd')
+                        .add_jm()
+                        .format(list_biography[index].date.toLocal())),
                   ],
                 ),
               ),
@@ -225,49 +261,60 @@ class _IntroductionState extends State<Introduction> {
             Expanded(
               flex: 7,
               child: TextFormField(
-                controller: _editBiography[index],
+                initialValue: list_biography[index].data,
                 maxLines: 15,
                 autocorrect: true,
                 keyboardType: TextInputType.multiline,
                 enableSuggestions: true,
-                readOnly: !editMode,
-                enabled: !editMode,
+                readOnly: !list_biography[index].edit,
+                enabled: list_biography[index].edit,
+                onChanged: (value) => list_biography[index].data = value,
                 decoration: InputDecoration(
                     labelStyle: TextStyle(fontSize: 24),
                     labelText: "Biography:",
                     border: OutlineInputBorder()),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
-              child: RaisedButton(
-                child: Text("Set as Actice"),
-                onPressed: list_biography[index].isActive
-                    ? null
-                    : () {
-                        makeBiographyActive(list_biography[index].id);
-                        setState(() {
-                          makeActiveBioInactive();
-                          list_biography[index].isActive = true;
-                        });
-                      },
-                color: Colors.greenAccent,
-                disabledColor: Colors.grey,
+            Visibility(
+              visible: !list_biography[index].edit,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+                child: RaisedButton(
+                  child: Text("Set as Actice"),
+                  onPressed: list_biography[index].isActive
+                      ? null
+                      : () {
+                          makeBiographyActive(list_biography[index].id);
+                          setState(() {
+                            makeActiveBioInactive();
+                            list_biography[index].isActive = true;
+                            sortBiography();
+                          });
+                        },
+                  color: Colors.greenAccent,
+                  disabledColor: Colors.grey,
+                ),
               ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
               child: RaisedButton(
-                child: editMode ? Text("Done") : Text("Edit"),
-                onPressed: editMode
-                    ? () {
+                child: list_biography[index].edit ? Text("Done") : Text("Edit"),
+                onPressed: list_biography[index].edit
+                    ? () async {
                         setState(() {
-                          editMode = !editMode;
+                          list_biography[index].edit =
+                              !list_biography[index].edit;
                         });
+
+                        await updateBiography(list_biography[index].id,
+                                list_biography[index].data)
+                            .then((val) => print("Done"));
                       }
                     : () {
                         setState(() {
-                          editMode = !editMode;
+                          list_biography[index].edit =
+                              !list_biography[index].edit;
                         });
                       },
               ),
@@ -275,17 +322,24 @@ class _IntroductionState extends State<Introduction> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
               child: RaisedButton(
-                child: editMode ? Text("Cancel") : Text("Delete"),
-                onPressed: editMode
-                    ? () {}
+                child: list_biography[index].edit
+                    ? Text("Cancel")
+                    : Text("Delete"),
+                onPressed: list_biography[index].edit
+                    ? () {
+                        setState(() => list_biography[index].edit =
+                            !list_biography[index].edit);
+                      }
                     : list_biography[index].isActive
                         ? null
                         : () {
                             deleteBiography(list_biography[index].id);
                             setState(() {
-                              list_biography.removeAt(index);
-                            });                            
-                            _editBiography.removeAt(index);
+                              list_biography = list_biography
+                                  .where((element) =>
+                                      element.id != list_biography[index].id)
+                                  .toList();
+                            });
                           },
                 color: Colors.redAccent,
               ),
