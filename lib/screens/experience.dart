@@ -186,7 +186,15 @@ class _ExperienceState extends State<Experience> {
               FlatButton(
                 child: Text(
                     !experienceData.isActive ? "SET ACTIVE" : "SET INACTIVE"),
-                onPressed: () {},
+                onPressed: () {
+                  updateExperienceData({
+                    "_id": experienceData.id,
+                    "isActive": (!experienceData.isActive).toString()
+                  });
+                  setState(() {
+                    experienceData.isActive = !experienceData.isActive;
+                  });
+                },
                 color:
                     !experienceData.isActive ? Colors.greenAccent : Colors.grey,
               ),
@@ -203,6 +211,19 @@ class _ExperienceState extends State<Experience> {
       throw new Exception(response.body);
     } else if (response.statusCode == 200) {
       return;
+    }
+  }
+
+  updateExperienceData(dynamic data) async {
+    final response = await http.post(
+        Global.backend_url_local + '/updateData?db=' + Experience.db,
+        body: data);
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else if (response.statusCode == 500) {
+      throw new Exception(response.body);
+    } else {
+      throw new Exception("HTTP call failed");
     }
   }
 }
