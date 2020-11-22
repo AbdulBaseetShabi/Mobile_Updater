@@ -195,7 +195,8 @@ class _IntroductionState extends State<Introduction> {
     }
   }
 
-//Todod: Widgets for errors
+//TODO: Widgets for errors
+//TODO: Generalize delete,using  id and db
   deleteBiography(String id) async {
     final response = await http.post(
         Global.backend_url_local + '/removeData?db=' + Introduction.db,
