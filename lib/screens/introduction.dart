@@ -65,7 +65,7 @@ class _IntroductionState extends State<Introduction> {
                         String date = DateTime.now().toUtc().toString();
                         String value = _newBiography.text;
                         await addBiography({
-                          "is_active": "false",
+                          "is_active": false,
                           "data": value,
                           "date": date
                         }).then((id) => {
@@ -114,7 +114,8 @@ class _IntroductionState extends State<Introduction> {
       body: FutureBuilder<List<Biography>>(
         future: biography,
         builder: (context, snapshot) {
-          if (snapshot.hasData) {
+          if (snapshot.hasData &&
+              snapshot.connectionState == ConnectionState.done) {
             list_biography = snapshot.data;
             sortBiography();
 
@@ -124,6 +125,7 @@ class _IntroductionState extends State<Introduction> {
                 return biographyTile(index);
               },
               options: CarouselOptions(
+                  initialPage: 0,
                   onPageChanged: (index, reason) {
                     setState(() => list_biography[index].edit = false);
                   },
@@ -171,8 +173,13 @@ class _IntroductionState extends State<Introduction> {
 
   Future<String> addBiography(dynamic data) async {
     final response = await http.post(
-        Global.backend_url_local + '/addData?db=' + Introduction.db,
-        body: data);
+      Global.backend_url_local + '/addData?db=' + Introduction.db,
+      headers: {
+        'Content-Type': 'application/json',
+        "Accept": "application/json"
+      },
+      body: json.encode(data),
+    );
     if (response.statusCode == 201) {
       return json.decode(response.body);
     } else if (response.statusCode == 500) {
@@ -184,8 +191,13 @@ class _IntroductionState extends State<Introduction> {
 
   updateBiography(String id, String data) async {
     final response = await http.post(
-        Global.backend_url_local + '/updateData?db=' + Introduction.db,
-        body: {'_id': id, "data": data});
+      Global.backend_url_local + '/updateData?db=' + Introduction.db,
+      headers: {
+        'Content-Type': 'application/json',
+        "Accept": "application/json"
+      },
+      body: json.encode({'_id': id, "data": data}),
+    );
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else if (response.statusCode == 500) {
@@ -196,11 +208,16 @@ class _IntroductionState extends State<Introduction> {
   }
 
 //TODO: Widgets for errors
-//TODO: Generalize delete,using  id and db
+//TODO: Generalize all db calls,using  id and db
   deleteBiography(String id) async {
     final response = await http.post(
-        Global.backend_url_local + '/removeData?db=' + Introduction.db,
-        body: {'_id': id});
+      Global.backend_url_local + '/removeData?db=' + Introduction.db,
+      headers: {
+        'Content-Type': 'application/json',
+        "Accept": "application/json"
+      },
+      body: json.encode({'_id': id}),
+    );
     if (response.statusCode == 500) {
       throw new Exception(response.body);
     } else if (response.statusCode == 200) {
@@ -210,8 +227,13 @@ class _IntroductionState extends State<Introduction> {
 
   void makeBiographyActive(id) async {
     final response = await http.post(
-        Global.backend_url_local + '/biography/active',
-        body: {'_id': id});
+      Global.backend_url_local + '/biography/active',
+      headers: {
+        'Content-Type': 'application/json',
+        "Accept": "application/json"
+      },
+      body: json.encode({'_id': id}),
+    );
     if (response.statusCode == 500) {
       throw new Exception(response.body);
     }
