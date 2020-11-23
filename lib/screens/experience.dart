@@ -2,14 +2,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:resume_updater/global.dart';
-import 'package:intl/intl.dart';
 
 class ExperienceData {
   String id;
   String jobTitle;
   String companyName;
-  DateTime dateFrom;
-  DateTime dateTo;
+  String dateFrom; //TODO: DateTime
+  String dateTo;
   String location;
   List<String> descriptions;
   bool isCoop;
@@ -37,8 +36,8 @@ class ExperienceData {
     }
     return ExperienceData(
         companyName: json['companyName'],
-        dateFrom: DateTime.parse(json['dateFrom']),
-        dateTo: DateTime.parse(json['dateTo']),
+        dateFrom: json['dateFrom'],
+        dateTo: json['dateTo'],
         descriptions: descriptions,
         jobTitle: json['jobTitle'],
         location: json['location'],
@@ -67,48 +66,311 @@ class Experience extends StatefulWidget {
 }
 
 class _ExperienceState extends State<Experience> {
-  Future<List<ExperienceData>> experience;
   List<ExperienceData> list_experience;
+  List<int> coopExperience;
+  List<int> workExperience;
+  List<int> volunteerExperience;
 
   void initState() {
     super.initState();
-    experience = getExperiences();
   }
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
         title: Text("Experiences"),
       ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.add),
+        onPressed: () {
+          int value = 1;
+          String jobTitle = "";
+          String companyName = "";
+          String dateFrom = ""; //TODO: DateTime
+          String dateTo = "";
+          String location = "";
+          List<String> descriptions = [];
+          bool isCoop = false;
+          bool isWork = false;
+          bool isVolunteer = false;
+          bool isActive = true;
+          TextEditingController newDescription = new TextEditingController();
+
+          showDialog(
+              context: context,
+              barrierDismissible: false,
+              useSafeArea: true,
+              builder: (context) => StatefulBuilder(
+                    builder: (context, setState) => AlertDialog(
+                      scrollable: true,
+                      title: Text("ADD NEW EXPERIENCE"),
+                      content: Column(
+                        children: [
+                          TextField(
+                            onChanged: (value) {
+                              jobTitle = value;
+                            },
+                            decoration: InputDecoration(
+                              focusedBorder: UnderlineInputBorder(),
+                              labelText: "Job Title",
+                              hintStyle: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12.0,
+                              ),
+                            ),
+                          ),
+                          TextField(
+                            onChanged: (value) {
+                              companyName = value;
+                            },
+                            decoration: InputDecoration(
+                              focusedBorder: UnderlineInputBorder(),
+                              labelText: "Company",
+                              hintStyle: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12.0,
+                              ),
+                            ),
+                          ),
+                          TextField(
+                            onChanged: (value) {
+                              location = value;
+                            },
+                            decoration: InputDecoration(
+                              focusedBorder: UnderlineInputBorder(),
+                              labelText: "Location",
+                              hintStyle: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12.0,
+                              ),
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  onChanged: (value) {
+                                    dateFrom = value;
+                                  },
+                                  decoration: InputDecoration(
+                                    focusedBorder: UnderlineInputBorder(),
+                                    labelText: "From",
+                                    hintStyle: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 12.0,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(
+                                width: 10.0,
+                              ),
+                              Expanded(
+                                child: TextField(
+                                  onChanged: (value) {
+                                    dateTo = value;
+                                  },
+                                  decoration: InputDecoration(
+                                    focusedBorder: UnderlineInputBorder(),
+                                    labelText: "To",
+                                    hintStyle: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 12.0,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              DropdownButton(
+                                value: value,
+                                items: [
+                                  DropdownMenuItem(
+                                    child: Text("Coop"),
+                                    value: 1,
+                                  ),
+                                  DropdownMenuItem(
+                                    child: Text("Volunteer"),
+                                    value: 2,
+                                  ),
+                                  DropdownMenuItem(
+                                    child: Text("Work"),
+                                    value: 3,
+                                  ),
+                                ],
+                                onChanged: (val) {
+                                  setState(() {
+                                    value = val;
+                                  });
+                                },
+                              ),
+                              FlatButton(
+                                  child: Text(
+                                      isActive ? "Set Inactive" : "Set Active"),
+                                  color: isActive
+                                      ? Colors.grey
+                                      : Colors.greenAccent,
+                                  onPressed: () {
+                                    setState(() {
+                                      isActive = !isActive;
+                                    });
+                                  })
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: newDescription,
+                                  maxLines: null,
+                                  autocorrect: true,
+                                  keyboardType: TextInputType.multiline,
+                                  showCursor: true,
+                                  enableSuggestions: true,
+                                  autofocus: true,
+                                  decoration: InputDecoration(
+                                      labelText: "New Description:",
+                                      border: OutlineInputBorder()),
+                                ),
+                              ),
+                            ],
+                          ),
+                          FlatButton(
+                            minWidth: MediaQuery.of(context).size.width,
+                            child: Text("Add Description"),
+                            color: Colors.blueAccent,
+                            onPressed: () {
+                              if (newDescription.text.isNotEmpty) {
+                                setState(() {
+                                  descriptions.add(newDescription.text);
+                                  newDescription.text = "";
+                                });
+                              }
+                            },
+                          ),
+                          ExpansionTile(
+                            title: Text("Descriptions"),
+                            children: descriptions.map((e) => Text(e)).toList(),
+                          ),
+                          FlatButton(
+                            minWidth: MediaQuery.of(context).size.width,
+                            child: Text("ADD"),
+                            color: Colors.blueAccent,
+                            onPressed: () {
+                              if (value == 1) {
+                                isCoop = true;
+                              } else if (value == 2) {
+                                isVolunteer = true;
+                              } else {
+                                isWork = true;
+                              }
+
+                              addExperienceData({
+                                'companyName': "ATS",
+                                'dateFrom': dateFrom,
+                                'dateTo': dateTo,
+                                'descriptions': descriptions,
+                                'jobTitle': "Test",
+                                'location': location,
+                                'isCoop': isCoop,
+                                'isVolunteer': isVolunteer,
+                                'isWork': isWork,
+                                'isActive': isActive,
+                              }).then((id) {
+                                Navigator.pop(context, true);
+                              });
+                            },
+                          ),
+                          FlatButton(
+                            minWidth: MediaQuery.of(context).size.width,
+                            child: Text("SAVE FOR LATER"),
+                            color: Colors.greenAccent,
+                            onPressed: () {
+                              isActive = false;
+                              if (value == 1) {
+                                isCoop = true;
+                              } else if (value == 2) {
+                                isVolunteer = true;
+                              } else {
+                                isWork = true;
+                              }
+
+                              addExperienceData({
+                                'companyName': companyName,
+                                'dateFrom': dateFrom,
+                                'dateTo': dateTo,
+                                'descriptions': descriptions,
+                                'jobTitle': jobTitle,
+                                'location': location,
+                                'isCoop': isCoop,
+                                'isVolunteer': isVolunteer,
+                                'isWork': isWork,
+                                'isActive': isActive,
+                              }).then((id) {
+                                Navigator.pop(context, true);
+                              });
+                            },
+                          ),
+                          FlatButton(
+                            minWidth: MediaQuery.of(context).size.width,
+                            child: Text("CANCEL"),
+                            color: Colors.redAccent,
+                            onPressed: () {
+                              Navigator.pop(context, false);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  )).then((value) {
+            if (value) {
+              setState(() {
+                list_experience = list_experience;
+              });
+            }
+          });
+        },
+      ),
       body: SingleChildScrollView(
         child: FutureBuilder<List<ExperienceData>>(
-          future: experience,
+          future: getExperiences(),
           builder: (builder, snapshot) {
-            if (snapshot.hasData) {
+            if (snapshot.hasData &&
+                snapshot.connectionState == ConnectionState.done) {
               list_experience = snapshot.data;
+              coopExperience = [];
+              workExperience = [];
+              volunteerExperience = [];
 
+              for (int i = 0; i < list_experience.length; i++) {
+                if (list_experience[i].isCoop) {
+                  coopExperience.add(i);
+                } else if (list_experience[i].isWork) {
+                  workExperience.add(i);
+                } else if (list_experience[i].isVolunteer) {
+                  volunteerExperience.add(i);
+                } else {
+                  print("corrupted data");
+                }
+              }
               return Column(
                 children: [
                   ExpansionTile(
                     title: Text("Coop Experiences"),
-                    children: listExperienceTiles(list_experience
-                        .where((element) => element.isCoop)
-                        .toList()),
+                    children: listExperienceTiles(coopExperience),
                   ),
                   ExpansionTile(
                     title: Text("Work Experiences"),
-                    children: listExperienceTiles(list_experience
-                        .where((element) => element.isWork)
-                        .toList()),
+                    children: listExperienceTiles(workExperience),
                   ),
                   ExpansionTile(
                     title: Text("Volunteer Experiences"),
-                    children: listExperienceTiles(list_experience
-                        .where((element) => element.isVolunteer)
-                        .toList()),
+                    children: listExperienceTiles(volunteerExperience),
                   ),
                 ],
               );
@@ -135,28 +397,31 @@ class _ExperienceState extends State<Experience> {
     }
   }
 
-  List<Widget> listExperienceTiles(List<ExperienceData> listExperiences) {
-    return listExperiences.map((e) => experienceTile(e)).toList();
+  List<Widget> listExperienceTiles(List<int> experienceIndex) {
+    return experienceIndex
+        .map((e) => experienceTile(e, list_experience[e].isActive))
+        .toList();
   }
 
-  Widget experienceTile(ExperienceData experienceData) {
+  Widget experienceTile(int index, bool active) {
     return ExpansionTile(
-        title:
-            Text("${experienceData.jobTitle} at ${experienceData.companyName}"),
+        title: Text(
+            "${list_experience[index].jobTitle} at ${list_experience[index].companyName}"),
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Text("${experienceData.location}"),
+              Text("${list_experience[index].location}"),
               Text(
-                  "${DateFormat('yyyy-MM-dd').format(experienceData.dateFrom.toLocal())} - ${DateFormat('yyyy-MM-dd').format(experienceData.dateTo.toLocal())}"),
+                  "${list_experience[index].dateFrom} - ${list_experience[index].dateTo}"),
             ],
           ),
           Padding(
             padding:
                 const EdgeInsets.symmetric(vertical: 12.0, horizontal: 29.0),
             child: Column(
-              children: experienceData.descriptions
+              children: list_experience[index]
+                  .descriptions
                   .map((e) => Text(" - " + e))
                   .toList(),
             ),
@@ -167,13 +432,13 @@ class _ExperienceState extends State<Experience> {
               FlatButton(
                 child: Text("DELETE"),
                 onPressed: () {
-                  deleteExperienceData(experienceData.id);
-                  setState(() {
-                    print(list_experience);
-                    list_experience = list_experience
-                        .where((element) => element.id != experienceData.id)
-                        .toList();
-                    print(list_experience);
+                  deleteExperienceData(list_experience[index].id).then((value) {
+                    setState(() {
+                      list_experience = list_experience
+                          .where((element) =>
+                              element.id != list_experience[index].id)
+                          .toList();
+                    });
                   });
                 },
                 color: Colors.redAccent,
@@ -184,41 +449,65 @@ class _ExperienceState extends State<Experience> {
                 color: Colors.blueAccent,
               ),
               FlatButton(
-                child: Text(
-                    !experienceData.isActive ? "SET ACTIVE" : "SET INACTIVE"),
+                child: Text(!active ? "SET ACTIVE" : "SET INACTIVE"),
                 onPressed: () {
-                  updateExperienceData({
-                    "_id": experienceData.id,
-                    "isActive": (!experienceData.isActive).toString()
-                  });
+                  updateExperienceData(
+                      {"_id": list_experience[index].id, "isActive": !active});
                   setState(() {
-                    experienceData.isActive = !experienceData.isActive;
+                    active = !active;
                   });
                 },
-                color:
-                    !experienceData.isActive ? Colors.greenAccent : Colors.grey,
+                color: !active ? Colors.greenAccent : Colors.grey,
               ),
             ],
           )
         ]);
   }
 
-  deleteExperienceData(String id) async {
+  Future<dynamic> deleteExperienceData(String id) async {
     final response = await http.post(
-        Global.backend_url_local + '/removeData?db=' + Experience.db,
-        body: {'_id': id});
+      Global.backend_url_local + '/removeData?db=' + Experience.db,
+      headers: {
+        'Content-Type': 'application/json',
+        "Accept": "application/json"
+      },
+      body: json.encode({'_id': id}),
+    );
     if (response.statusCode == 500) {
       throw new Exception(response.body);
     } else if (response.statusCode == 200) {
-      return;
+      return json.decode(response.body);
     }
   }
 
   updateExperienceData(dynamic data) async {
     final response = await http.post(
-        Global.backend_url_local + '/updateData?db=' + Experience.db,
-        body: data);
+      Global.backend_url_local + '/updateData?db=' + Experience.db,
+      headers: {
+        'Content-Type': 'application/json',
+        "Accept": "application/json"
+      },
+      body: json.encode(data),
+    );
     if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else if (response.statusCode == 500) {
+      throw new Exception(response.body);
+    } else {
+      throw new Exception("HTTP call failed");
+    }
+  }
+
+  addExperienceData(dynamic data) async {
+    final response = await http.post(
+      Global.backend_url_local + '/addData?db=' + Experience.db,
+      headers: {
+        'Content-Type': 'application/json',
+        "Accept": "application/json"
+      },
+      body: json.encode(data),
+    );
+    if (response.statusCode == 201) {
       return json.decode(response.body);
     } else if (response.statusCode == 500) {
       throw new Exception(response.body);
