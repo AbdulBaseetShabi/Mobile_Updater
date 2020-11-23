@@ -271,11 +271,11 @@ class _ExperienceState extends State<Experience> {
                               }
 
                               addExperienceData({
-                                'companyName': "ATS",
+                                'companyName': companyName,
                                 'dateFrom': dateFrom,
                                 'dateTo': dateTo,
                                 'descriptions': descriptions,
-                                'jobTitle': "Test",
+                                'jobTitle': jobTitle,
                                 'location': location,
                                 'isCoop': isCoop,
                                 'isVolunteer': isVolunteer,
